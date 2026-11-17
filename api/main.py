@@ -18,7 +18,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from basis import assess_credit, price_funeral, price_life, project_retirement
+from basis import assess_credit, implied_volatility, price_funeral, price_life, price_option, project_retirement
 from basis.assumptions import DEFAULT_BASIS
 from basis.credit import DEFAULT_POLICY
 from basis.experience import analyse_experience, load_experience_dataset
@@ -167,11 +167,46 @@ def credit_policy() -> dict:
     return DEFAULT_POLICY.as_dict()
 
 
+class OptionRequest(BaseModel):
+    S: float = Field(100, gt=0, description="Spot price")
+    K: float = Field(100, gt=0, description="Strike")
+    T: float = Field(1.0, gt=0, le=30, description="Time to expiry in years")
+    r: float = Field(0.05, ge=-0.1, le=0.5, description="Risk-free rate")
+    sigma: float = Field(0.20, gt=0, le=3, description="Volatility")
+    q: float = Field(0.0, ge=0, le=0.5, description="Dividend yield")
+    option_type: Literal["call", "put"] = "call"
+    n_sims: int = Field(100_000, ge=1000, le=1_000_000)
+
+
+class ImpliedVolRequest(BaseModel):
+    price: float = Field(..., gt=0)
+    S: float = Field(100, gt=0)
+    K: float = Field(100, gt=0)
+    T: float = Field(1.0, gt=0, le=30)
+    r: float = Field(0.05, ge=-0.1, le=0.5)
+    q: float = Field(0.0, ge=0, le=0.5)
+    option_type: Literal["call", "put"] = "call"
+
+
 class ExperienceRequest(BaseModel):
     by: list[Literal["age_band", "sex", "smoker_status"]] = Field(
         default_factory=lambda: ["smoker_status"],
         description="Segmentation dimensions for the A/E analysis",
     )
+
+
+@router.post("/options/price", tags=["pricing"])
+def options_price(req: OptionRequest) -> dict:
+    """Price a European option: Black-Scholes price, Greeks, a Monte Carlo
+    cross-check, the put-call parity residual and a value-versus-spot curve."""
+    return asdict(price_option(**req.model_dump()))
+
+
+@router.post("/options/implied-vol", tags=["pricing"])
+def options_implied_vol(req: ImpliedVolRequest) -> dict:
+    """Back out the implied volatility that reproduces a given option price."""
+    iv = implied_volatility(**req.model_dump())
+    return {"implied_volatility": iv, "inputs": req.model_dump()}
 
 
 @router.post("/experience/analyse", tags=["pricing"])

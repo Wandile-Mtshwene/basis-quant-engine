@@ -16,6 +16,14 @@ from .credit import (
     monthly_installment,
     score_application,
 )
+from .options import (
+    OptionResult,
+    black_scholes_price,
+    greeks,
+    implied_volatility,
+    monte_carlo_price,
+    price_option,
+)
 from .retirement import RetirementProjection, project_retirement
 
 __all__ = [
@@ -35,6 +43,12 @@ __all__ = [
     "CreditDecision",
     "CreditPolicy",
     "DEFAULT_POLICY",
+    "price_option",
+    "black_scholes_price",
+    "greeks",
+    "monte_carlo_price",
+    "implied_volatility",
+    "OptionResult",
 ]
 
 __version__ = "0.1.0"

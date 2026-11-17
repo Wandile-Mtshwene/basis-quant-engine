@@ -78,6 +78,21 @@ def test_credit_assess_and_policy_endpoints():
     assert p["scorecard_calibration"]["pdo"] == 30
 
 
+def test_options_endpoints():
+    r = client.post("/api/options/price", json={
+        "S": 100, "K": 100, "T": 1, "r": 0.05, "sigma": 0.2,
+        "option_type": "call", "n_sims": 20_000})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["price"] == pytest.approx(10.4506, abs=1e-3)
+    assert abs(body["put_call_parity"]["residual"]) < 1e-6
+    assert len(body["value_curve"]) == 25
+    iv = client.post("/api/options/implied-vol", json={
+        "price": 10.4506, "S": 100, "K": 100, "T": 1, "r": 0.05, "option_type": "call"}).json()
+    assert iv["implied_volatility"] == pytest.approx(0.20, abs=1e-3)
+    assert client.post("/api/options/price", json={"sigma": 0}).status_code == 422
+
+
 def test_experience_endpoints():
     r = client.post("/api/experience/analyse", json={"by": ["sex", "smoker_status"]})
     assert r.status_code == 200

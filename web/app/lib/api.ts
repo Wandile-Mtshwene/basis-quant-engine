@@ -169,6 +169,25 @@ export type ExperienceResult = {
 export const analyseExperience = (by: string[]) =>
   post<ExperienceResult>("/api/experience/analyse", { by });
 
+export type OptionRequest = {
+  S: number; K: number; T: number; r: number; sigma: number; q: number;
+  option_type: "call" | "put"; n_sims: number;
+};
+
+export type OptionResult = {
+  option_type: string;
+  price: number;
+  d1: number;
+  d2: number;
+  greeks: Record<"delta" | "gamma" | "vega_per_1pct" | "theta_per_day" | "rho_per_1pct", number>;
+  monte_carlo: { price: number; std_error: number; ci95: [number, number]; n_sims: number };
+  put_call_parity: { call_minus_put: number; forward_value: number; residual: number };
+  value_curve: { spot: number; value: number; intrinsic: number }[];
+  inputs: Record<string, number | string>;
+};
+
+export const priceOption = (req: OptionRequest) => post<OptionResult>("/api/options/price", req);
+
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(`API ${res.status}`);
