@@ -78,6 +78,35 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export const priceLife = (req: LifeRequest) => post<Quote>("/api/price/life", req);
 export const priceFuneral = (req: FuneralRequest) => post<Quote>("/api/price/funeral", req);
 
+export type RetirementRequest = {
+  current_age: number;
+  retirement_age: number;
+  end_age: number;
+  current_savings: number;
+  annual_contribution: number;
+  contribution_escalation: number;
+  expected_return: number;
+  return_volatility: number;
+  inflation: number;
+  target_income: number;
+  n_sims: number;
+};
+
+export type RetirementProjection = {
+  ages: number[];
+  percentiles: Record<"p5" | "p25" | "p50" | "p75" | "p95", number[]>;
+  capital_at_retirement: Record<"p5" | "p25" | "p50" | "p75" | "p95", number>;
+  success_probability: number;
+  probability_of_ruin: number;
+  median_depletion_age: number | null;
+  target_income_first_year: number;
+  inputs: Record<string, number>;
+  n_sims: number;
+};
+
+export const projectRetirement = (req: RetirementRequest) =>
+  post<RetirementProjection>("/api/retirement/project", req);
+
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(`API ${res.status}`);

@@ -24,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             <nav className="flex items-center gap-5 text-sm text-muted">
               <Link href="/" className="hover:text-foreground">Quote</Link>
+              <Link href="/retirement" className="hover:text-foreground">Retirement</Link>
               <Link href="/admin" className="hover:text-foreground">Admin basis</Link>
               <a href="/api/docs" target="_blank" rel="noreferrer" className="hover:text-foreground">
                 API docs ↗

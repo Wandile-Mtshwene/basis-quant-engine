@@ -7,6 +7,7 @@ products, built on real public mortality tables (2015 VBT and ELT No. 15).
 from .assumptions import DEFAULT_BASIS, PricingBasis
 from .mortality import load_elt, load_vbt
 from .pricing import Quote, price_funeral, price_life
+from .retirement import RetirementProjection, project_retirement
 
 __all__ = [
     "price_life",
@@ -16,6 +17,8 @@ __all__ = [
     "DEFAULT_BASIS",
     "load_vbt",
     "load_elt",
+    "project_retirement",
+    "RetirementProjection",
 ]
 
 __version__ = "0.1.0"

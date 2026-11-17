@@ -47,6 +47,19 @@ def test_validation_rejects_out_of_range():
     assert client.post("/api/price/life", json={"sum_assured": -10}).status_code == 422
 
 
+def test_retirement_projection_endpoint():
+    r = client.post("/api/retirement/project", json={
+        "current_age": 40, "retirement_age": 65, "current_savings": 500_000,
+        "annual_contribution": 120_000, "target_income": 300_000, "n_sims": 1000,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert 0.0 <= body["success_probability"] <= 1.0
+    assert len(body["ages"]) == len(body["percentiles"]["p50"])
+    assert client.post("/api/retirement/project",
+                       json={"current_age": 70, "retirement_age": 65}).status_code == 422
+
+
 def test_assumptions_and_tables_endpoints():
     a = client.get("/api/assumptions").json()
     assert a["interest_rate"] == 0.09

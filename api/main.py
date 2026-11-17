@@ -18,7 +18,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from basis import price_funeral, price_life
+from basis import price_funeral, price_life, project_retirement
 from basis.assumptions import DEFAULT_BASIS
 from basis.mortality import load_elt, load_vbt
 
@@ -71,6 +71,20 @@ class FuneralQuoteRequest(BaseModel):
     explain: bool = True
 
 
+class RetirementRequest(BaseModel):
+    current_age: int = Field(40, ge=18, le=74)
+    retirement_age: int = Field(65, ge=45, le=75)
+    end_age: int = Field(95, ge=75, le=110)
+    current_savings: float = Field(500_000, ge=0)
+    annual_contribution: float = Field(120_000, ge=0)
+    contribution_escalation: float = Field(0.05, ge=0, le=0.2)
+    expected_return: float = Field(0.10, ge=0, le=0.3)
+    return_volatility: float = Field(0.12, ge=0, le=0.5)
+    inflation: float = Field(0.05, ge=0, le=0.2)
+    target_income: float = Field(300_000, ge=0, description="Desired retirement income per year, in today's money")
+    n_sims: int = Field(10_000, ge=500, le=50_000)
+
+
 def _strip_trace(payload: dict, explain: bool) -> dict:
     if not explain:
         payload = dict(payload)
@@ -105,6 +119,16 @@ def quote_funeral(req: FuneralQuoteRequest) -> dict:
         frequency=req.frequency, cover_to_age=req.cover_to_age,
     )
     return _strip_trace(quote.__dict__, req.explain)
+
+
+@router.post("/retirement/project", tags=["pricing"])
+def retirement(req: RetirementRequest) -> dict:
+    """Monte Carlo projection of a retirement plan: the fan of wealth over time,
+    capital at retirement, and the probability the money lasts."""
+    if req.retirement_age <= req.current_age or req.end_age < req.retirement_age:
+        from fastapi import HTTPException
+        raise HTTPException(422, "need current_age < retirement_age <= end_age")
+    return project_retirement(**req.model_dump()).__dict__
 
 
 @router.get("/assumptions", tags=["admin"])
