@@ -60,6 +60,24 @@ def test_retirement_projection_endpoint():
                        json={"current_age": 70, "retirement_age": 65}).status_code == 422
 
 
+def test_credit_assess_and_policy_endpoints():
+    r = client.post("/api/credit/assess", json={
+        "age": 40, "employment_type": "permanent", "employment_months": 120,
+        "existing_accounts": 2, "adverse_history": False,
+        "gross_monthly_income": 45_000, "net_monthly_income": 33_000,
+        "monthly_living_expenses": 12_000, "existing_monthly_debt": 4_000,
+        "loan_amount": 150_000, "annual_rate": 0.18, "term_months": 48,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["decision"] in {"approve", "refer", "decline"}
+    assert body["scorecard"]["grade"] in {"A", "B", "C", "D", "E"}
+    assert body["affordability"]["installment"] > 0
+    assert client.post("/api/credit/assess", json={"age": 10}).status_code == 422
+    p = client.get("/api/credit/policy").json()
+    assert p["scorecard_calibration"]["pdo"] == 30
+
+
 def test_assumptions_and_tables_endpoints():
     a = client.get("/api/assumptions").json()
     assert a["interest_rate"] == 0.09

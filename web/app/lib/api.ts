@@ -107,6 +107,45 @@ export type RetirementProjection = {
 export const projectRetirement = (req: RetirementRequest) =>
   post<RetirementProjection>("/api/retirement/project", req);
 
+export type CreditRequest = {
+  age: number;
+  employment_type: "permanent" | "contract" | "self_employed" | "unemployed";
+  employment_months: number;
+  existing_accounts: number;
+  adverse_history: boolean;
+  gross_monthly_income: number;
+  net_monthly_income: number;
+  monthly_living_expenses: number;
+  existing_monthly_debt: number;
+  loan_amount: number;
+  annual_rate: number;
+  term_months: number;
+};
+
+export type CreditDecision = {
+  decision: "approve" | "refer" | "decline";
+  installment: number;
+  affordability: {
+    disposable_income: number;
+    installment: number;
+    total_debt_after: number;
+    debt_to_income: number;
+    installment_to_disposable: number;
+    affordable: boolean;
+    reasons: string[];
+  };
+  scorecard: {
+    score: number;
+    probability_of_default: number;
+    grade: string;
+    breakdown: { characteristic: string; value: string | number; band?: string; points: number }[];
+  };
+  reasons: string[];
+  inputs: Record<string, number | string | boolean>;
+};
+
+export const assessCredit = (req: CreditRequest) => post<CreditDecision>("/api/credit/assess", req);
+
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(`API ${res.status}`);

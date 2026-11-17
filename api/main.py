@@ -18,9 +18,11 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from basis import price_funeral, price_life, project_retirement
+from basis import assess_credit, price_funeral, price_life, project_retirement
 from basis.assumptions import DEFAULT_BASIS
+from basis.credit import DEFAULT_POLICY
 from basis.mortality import load_elt, load_vbt
+from dataclasses import asdict
 
 # Everything is served under /api so the same paths work locally and when the
 # engine is deployed as a serverless function behind a Next.js front end.
@@ -85,6 +87,24 @@ class RetirementRequest(BaseModel):
     n_sims: int = Field(10_000, ge=500, le=50_000)
 
 
+class CreditRequest(BaseModel):
+    # applicant / scorecard
+    age: int = Field(35, ge=16, le=90)
+    employment_type: Literal["permanent", "contract", "self_employed", "unemployed"] = "permanent"
+    employment_months: int = Field(36, ge=0, le=600)
+    existing_accounts: int = Field(2, ge=0, le=50)
+    adverse_history: bool = False
+    # affordability
+    gross_monthly_income: float = Field(45_000, gt=0)
+    net_monthly_income: float = Field(33_000, gt=0)
+    monthly_living_expenses: float = Field(12_000, ge=0)
+    existing_monthly_debt: float = Field(4_000, ge=0)
+    # loan requested
+    loan_amount: float = Field(150_000, gt=0)
+    annual_rate: float = Field(0.18, ge=0, le=0.6)
+    term_months: int = Field(48, ge=1, le=360)
+
+
 def _strip_trace(payload: dict, explain: bool) -> dict:
     if not explain:
         payload = dict(payload)
@@ -129,6 +149,21 @@ def retirement(req: RetirementRequest) -> dict:
         from fastapi import HTTPException
         raise HTTPException(422, "need current_age < retirement_age <= end_age")
     return project_retirement(**req.model_dump()).__dict__
+
+
+@router.post("/credit/assess", tags=["pricing"])
+def credit(req: CreditRequest) -> dict:
+    """Assess a loan application: affordability (NCA-style), a points scorecard
+    with probability of default, and an approve / refer / decline decision with
+    the full reason trail."""
+    return asdict(assess_credit(**req.model_dump()))
+
+
+@router.get("/credit/policy", tags=["admin"])
+def credit_policy() -> dict:
+    """The credit rule book: scorecard calibration, points tables, affordability
+    limits and grade bands. Everything the decision depends on, auditable."""
+    return DEFAULT_POLICY.as_dict()
 
 
 @router.get("/assumptions", tags=["admin"])
