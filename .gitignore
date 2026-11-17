@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# vendored for Vercel deploy (regenerate via scripts/vendor_web.py)
+web/api/basis/
+web/api/_app.py
+web/api/index.py
+web/requirements.txt
+
+# Vercel
+.vercel
