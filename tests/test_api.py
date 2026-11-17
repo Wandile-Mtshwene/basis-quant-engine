@@ -78,6 +78,17 @@ def test_credit_assess_and_policy_endpoints():
     assert p["scorecard_calibration"]["pdo"] == 30
 
 
+def test_experience_endpoints():
+    r = client.post("/api/experience/analyse", json={"by": ["sex", "smoker_status"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["segments"]) == 4
+    assert body["overall"]["ae_pct"] > 0
+    assert all("credible_ae_pct" in s for s in body["segments"])
+    d = client.get("/api/experience/dataset").json()
+    assert d["cells"] > 0 and d["deaths"] > 0
+
+
 def test_assumptions_and_tables_endpoints():
     a = client.get("/api/assumptions").json()
     assert a["interest_rate"] == 0.09

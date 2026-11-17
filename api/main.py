@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from basis import assess_credit, price_funeral, price_life, project_retirement
 from basis.assumptions import DEFAULT_BASIS
 from basis.credit import DEFAULT_POLICY
+from basis.experience import analyse_experience, load_experience_dataset
 from basis.mortality import load_elt, load_vbt
 from dataclasses import asdict
 
@@ -164,6 +165,39 @@ def credit_policy() -> dict:
     """The credit rule book: scorecard calibration, points tables, affordability
     limits and grade bands. Everything the decision depends on, auditable."""
     return DEFAULT_POLICY.as_dict()
+
+
+class ExperienceRequest(BaseModel):
+    by: list[Literal["age_band", "sex", "smoker_status"]] = Field(
+        default_factory=lambda: ["smoker_status"],
+        description="Segmentation dimensions for the A/E analysis",
+    )
+
+
+@router.post("/experience/analyse", tags=["pricing"])
+def experience(req: ExperienceRequest) -> dict:
+    """Actual-versus-expected mortality analysis with credibility, on the
+    bundled synthetic experience dataset, segmented by the chosen dimensions."""
+    df = load_experience_dataset().copy()
+    by = list(req.by)
+    if "age_band" in by:
+        df["age_band"] = (df["age"] // 10 * 10).astype(int).astype(str) + "s"
+    result = analyse_experience(df, by=by)
+    return asdict(result)
+
+
+@router.get("/experience/dataset", tags=["admin"])
+def experience_dataset() -> dict:
+    """Summary of the bundled experience dataset."""
+    df = load_experience_dataset()
+    return {
+        "cells": len(df),
+        "life_years": round(float(df["exposure"].sum()), 0),
+        "deaths": int(df["actual_deaths"].sum()),
+        "ages": [int(df["age"].min()), int(df["age"].max())],
+        "dimensions": ["age", "sex", "smoker_status"],
+        "expected_basis": "2015 VBT ultimate",
+    }
 
 
 @router.get("/assumptions", tags=["admin"])

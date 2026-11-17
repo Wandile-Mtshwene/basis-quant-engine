@@ -146,6 +146,29 @@ export type CreditDecision = {
 
 export const assessCredit = (req: CreditRequest) => post<CreditDecision>("/api/credit/assess", req);
 
+export type ExperienceSegment = {
+  [dim: string]: string | number;
+  exposure: number;
+  actual: number;
+  expected: number;
+  ae_pct: number;
+  credibility: number;
+  credible_ae_pct: number;
+  ci_low_pct: number;
+  ci_high_pct: number;
+};
+
+export type ExperienceResult = {
+  by: string[];
+  segments: ExperienceSegment[];
+  overall: ExperienceSegment;
+  full_credibility_claims: number;
+  expected_basis: string;
+};
+
+export const analyseExperience = (by: string[]) =>
+  post<ExperienceResult>("/api/experience/analyse", { by });
+
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`);
   if (!res.ok) throw new Error(`API ${res.status}`);

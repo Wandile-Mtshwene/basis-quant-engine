@@ -103,6 +103,11 @@ class SelectUltimateTable(MortalityTable):
         i = min(max(age, self.ult_min_age), self.ult_max_age) - self.ult_min_age
         return float(self._ult[i])
 
+    def ultimate_qx(self, age: int) -> float:
+        """Ultimate mortality rate at an attained age - a convenient population
+        basis for experience analysis, independent of policy duration."""
+        return self._q_ult(age)
+
     def q(self, issue_age: int, policy_year: int) -> float:
         if policy_year <= self.select_period:
             key = (issue_age, policy_year)

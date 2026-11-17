@@ -26,6 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/" className="hover:text-foreground">Quote</Link>
               <Link href="/retirement" className="hover:text-foreground">Retirement</Link>
               <Link href="/credit" className="hover:text-foreground">Credit</Link>
+              <Link href="/experience" className="hover:text-foreground">Experience</Link>
               <Link href="/admin" className="hover:text-foreground">Admin basis</Link>
               <a href="/api/docs" target="_blank" rel="noreferrer" className="hover:text-foreground">
                 API docs ↗
